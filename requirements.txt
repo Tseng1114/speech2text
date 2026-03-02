@@ -1,0 +1,6 @@
+openai-whisper
+google-genai
+python-dotenv
+sentence-transformers
+torch
+tqdm

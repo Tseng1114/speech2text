@@ -22,7 +22,7 @@ if TRANSCRIPTION_METHOD not in ("api", "local"):
         "Please set it to 'api' or 'local'."
     )
 
-LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
+LLM_API_KEY: str = os.getenv("LLM_API_KEY")
 LLM_MODEL:   str = "gemini-2.5-flash"   # change model if needed
 
 if TRANSCRIPTION_METHOD == "api" and not LLM_API_KEY:
