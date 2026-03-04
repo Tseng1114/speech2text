@@ -4,48 +4,56 @@ from dotenv import load_dotenv
 load_dotenv()
 _base_dir = os.path.dirname(os.path.abspath(__file__))
 
-TRANSCRIPTION_METHOD: str = "api"     # change to "api" or "local"
-WHISPER_MODEL: str  = "medium"          # change model size if needed, you can choose from: tiny, base, small, medium, large
-WHISPER_FP16:  bool = True              # set to False if running on CPU
-WHISPER_DOWNLOAD_PATH: str = r"path" # change to your preferred path for storing Whisper models
+TRANSCRIPTION_METHOD = "api"      #Change to "api" or "local"
+WHISPER_MODEL = "medium"          #Change model size if needed, you can choose from: tiny, base, small, medium, large
+WHISPER_FP16 = True               #Set to False if running on CPU
+WHISPER_DOWNLOAD_PATH = r"path"   #Change to your preferred path for storing Whisper models
 
-AUDIO_LANGUAGE:  str | None = "zh"  
-OUTPUT_LANGUAGE: str | None = "en"   
+AUDIO_LANGUAGE = "zh"  
+OUTPUT_LANGUAGE = "en"   
 
-AUDIO_FOLDER:      str = os.path.join(_base_dir, "audio_sample")
-OUTPUT_FOLDER:     str = os.path.join(_base_dir, "output")
-GROUND_TRUTH_PATH: str = os.path.join(_base_dir, "test_model", "ground_truth.txt")
+AUDIO_FOLDER= os.path.join(_base_dir, "input_audio")
+OUTPUT_FOLDER= os.path.join(_base_dir, "transcribed_text")
+COMPRESSED_FOLDER=os.path.join(_base_dir,"compressed_audio")
+GROUND_TRUTH_PATH= os.path.join(_base_dir, "test_model", "ground_truth.txt")
 
-if TRANSCRIPTION_METHOD not in ("api", "local"):
-    raise ValueError(
-        f"[config] Invalid TRANSCRIPTION_METHOD='{TRANSCRIPTION_METHOD}'. "
-        "Please set it to 'api' or 'local'."
-    )
+API_TYPE = "groq"                                                           #Groq or Gemini
+LLM_API_KEY_gemini= os.getenv("LLM_API_KEY_gemini")
+LLM_MODEL_gemini= "gemini-2.5-flash"                                        #Change model if needed
+LLM_API_KEY_groq= os.getenv("LLM_API_KEY_groq")
+LLM_MODEL_groq= "whisper-large-v3-turbo"                                    #Change model if needed
+VALID_WHISPER_MODELS = {"tiny", "base", "small", "medium", "large"} 
 
-LLM_API_KEY: str = os.getenv("LLM_API_KEY")
-LLM_MODEL:   str = "gemini-2.5-flash"   # change model if needed
+##################### API keys configuration check section #####################
+if TRANSCRIPTION_METHOD == "api" :
+    if API_TYPE == "gemini" and not LLM_API_KEY_gemini:
+        raise ValueError(
+            "LLM_API_KEY_gemini is not set. "
+            "Please add it to your .env file when using TRANSCRIPTION_METHOD=api."
+        )
+    elif API_TYPE == "groq" and not LLM_API_KEY_groq:
+                raise ValueError(
+            "LLM_API_KEY_groq is not set. "
+            "Please add it to your .env file when using TRANSCRIPTION_METHOD=api."
+        )
+##################### API keys configuration check section #####################
 
-if TRANSCRIPTION_METHOD == "api" and not LLM_API_KEY:
-    raise ValueError(
-        "[config] LLM_API_KEY is not set. "
-        "Please add it to your .env file when using TRANSCRIPTION_METHOD=api."
-    )
-
-VALID_WHISPER_MODELS = {"tiny", "base", "small", "medium", "large"}
+############### local whisper models configuration check section ###############
 if TRANSCRIPTION_METHOD == "local" and WHISPER_MODEL not in VALID_WHISPER_MODELS:
     raise ValueError(
         f"[config] Invalid WHISPER_MODEL='{WHISPER_MODEL}'. "
         f"Choose from: {sorted(VALID_WHISPER_MODELS)}"
     )
-
+############### local whisper models configuration check section ###############
 
 def print_config() -> None:
     print("=" * 50)
     print(f"  Transcription Method : {TRANSCRIPTION_METHOD}")
     if TRANSCRIPTION_METHOD == "api":
-        masked_key = LLM_API_KEY[:6] + "..." if LLM_API_KEY else "(not set)"
-        print(f"  LLM Model            : {LLM_MODEL}")
-        print(f"  LLM API Key          : {masked_key}")
+        if API_TYPE == "gemini":
+            print(f"  LLM Model            : {LLM_MODEL_gemini}")
+        elif API_TYPE == "groq":
+            print(f"  LLM Model          : {LLM_MODEL_groq}")
     elif TRANSCRIPTION_METHOD == "local":
         print(f"  Whisper Model        : {WHISPER_MODEL}")
         print(f"  Whisper FP16 (GPU)   : {WHISPER_FP16}")
