@@ -4,3 +4,8 @@ python-dotenv
 sentence-transformers
 torch
 tqdm
+pydub
+groq
+fastapi
+uvicorn[standard]
+python-multipart

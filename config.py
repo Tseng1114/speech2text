@@ -21,7 +21,7 @@ API_TYPE = "groq"                                                           #Gro
 LLM_API_KEY_gemini= os.getenv("LLM_API_KEY_gemini")
 LLM_MODEL_gemini= "gemini-2.5-flash"                                        #Change model if needed
 LLM_API_KEY_groq= os.getenv("LLM_API_KEY_groq")
-LLM_MODEL_groq= "whisper-large-v3-turbo"                                    #Change model if needed
+LLM_MODEL_groq= "whisper-large-v3-turbo"                                    #whisper-large-v3、whisper-large-v3-turbo                                    #Change model if needed
 VALID_WHISPER_MODELS = {"tiny", "base", "small", "medium", "large"} 
 
 ##################### API keys configuration check section #####################
