@@ -11,6 +11,7 @@ LLM_API_KEY_groq=
 3. Place your audio files
 
 Put your files (.mp3, .wav, .m4a) into the audio_sample folder (or the folder path set in AUDIO_FOLDER).
+
 4. Run  `download_whisper.py ` if you haven't downloaded a model yet
 ```
 python download_whisper.py
