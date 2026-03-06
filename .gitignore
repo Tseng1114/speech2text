@@ -1,6 +1,9 @@
 .env
 __pycache__
-whisper_models/
-audio_sample/compressed_sample(CH).mp3
-audio_sample/compressed_test_audio.m4a
+whisper_models/medium.pt
+input_audio/compressed_sample(CH).mp3
+input_audio/compressed_test_audio.mp3
+input_audio/over25mb.mp3
+transcribed_text/compressed_sample(CH).txt
+transcribed_text/compressed_test_audio.txt
 test_model/ground_truth.txt
