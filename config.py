@@ -22,12 +22,12 @@ LLM_API_KEY_gemini= os.getenv("LLM_API_KEY_gemini")
 LLM_MODEL_gemini= "gemini-2.5-flash"                                        #Change model if needed
 LLM_API_KEY_groq= os.getenv("LLM_API_KEY_groq")
 LLM_MODEL_groq= "whisper-large-v3-turbo"                                    #whisper-large-v3、whisper-large-v3-turbo                                    #Change model if needed
-VALID_WHISPER_MODELS = {"tiny", "base", "small", "medium", "large"} 
+VALID_WHISPER_MODELS = {"tiny", "base", "small", "medium", "large"}
 
 ##################### API keys configuration check section #####################
 if TRANSCRIPTION_METHOD == "api" :
     if API_TYPE == "gemini" and not LLM_API_KEY_gemini:
-        raise ValueError(
+       raise ValueError(
             "LLM_API_KEY_gemini is not set. "
             "Please add it to your .env file when using TRANSCRIPTION_METHOD=api."
         )
@@ -48,15 +48,15 @@ if TRANSCRIPTION_METHOD == "local" and WHISPER_MODEL not in VALID_WHISPER_MODELS
 
 def print_config() -> None:
     print("=" * 50)
-    print(f"  Transcription Method : {TRANSCRIPTION_METHOD}")
-    if TRANSCRIPTION_METHOD == "api":
-        if API_TYPE == "gemini":
-            print(f"  LLM Model            : {LLM_MODEL_gemini}")
-        elif API_TYPE == "groq":
-            print(f"  LLM Model          : {LLM_MODEL_groq}")
-    elif TRANSCRIPTION_METHOD == "local":
-        print(f"  Whisper Model        : {WHISPER_MODEL}")
-        print(f"  Whisper FP16 (GPU)   : {WHISPER_FP16}")
+    print(f"  Transcription Method : {TRANSCRIPTION_METHOD}")  
+#    if TRANSCRIPTION_METHOD == "api":
+#        if API_TYPE == "gemini":
+#            print(f"  LLM Model            : {LLM_MODEL_gemini}")
+#        elif API_TYPE == "groq":
+#            print(f"  LLM Model          : {LLM_MODEL_groq}")
+#    elif TRANSCRIPTION_METHOD == "local":
+#        print(f"  Whisper Model        : {WHISPER_MODEL}")
+#        print(f"  Whisper FP16 (GPU)   : {WHISPER_FP16}")       
     print(f"  Audio Folder         : {AUDIO_FOLDER}")
     print(f"  Output Folder        : {OUTPUT_FOLDER}")
     #print(f"  Ground Truth Path    : {GROUND_TRUTH_PATH}")

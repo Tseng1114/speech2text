@@ -3,4 +3,8 @@ __pycache__
 whisper_models/
 audio_sample/compressed_sample(CH).mp3
 audio_sample/compressed_test_audio.m4a
+audio_sample/over25mb.mp3
+transcribed_txt/compressed_sample(CH).txt
+transcribed_txt/compressed_test_audio.txt
+transcribed_txt/compressed_over25mb.txt
 test_model/ground_truth.txt

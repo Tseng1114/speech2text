@@ -1,0 +1,1039 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audio Transcription</title>
+    <link rel="stylesheet" href="/static/index_style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <div class="logo">Audio<span>Script</span></div>
+        <span class="subtitle">Transcription & Translation Platform</span>
+      </header>
+
+      <aside>
+        <div class="section-header">Main</div>
+        <button
+          class="nav-item active"
+          onclick="switchPanel('transcribe', this)"
+        >
+          Transcribe
+        </button>
+        <button class="nav-item" onclick="switchPanel('history', this)">
+          History
+        </button>
+        <div class="section-header section-header--gap">Tools</div>
+        <button class="nav-item" onclick="switchPanel('compress', this)">
+          Compress
+        </button>
+        <button class="nav-item" onclick="switchPanel('evaluate', this)">
+          Evaluate
+        </button>
+        <div class="section-header section-header--gap">Settings</div>
+        <button class="nav-item" onclick="switchPanel('settings', this)">
+          Settings
+        </button>
+      </aside>
+
+      <main>
+        <div id="panel-transcribe" class="panel active">
+          <div id="preflightWarnings"></div>
+          <div class="card">
+            <div class="card-title">Upload Audio</div>
+            <div class="drop-zone" id="dropZone" onclick="fileInput.click()">
+              <p>
+                <strong>Click to select files</strong> or drag and drop here
+              </p>
+              <p class="drop-zone__hint">
+                Supported: .mp3 &middot; .wav &middot; .m4a &nbsp;&middot;&nbsp;
+                Groq API limit: 25 MB / file
+              </p>
+            </div>
+            <input
+              type="file"
+              id="fileInput"
+              accept=".mp3,.wav,.m4a"
+              multiple
+              style="display: none"
+            />
+            <div id="fileQueue" class="hidden file-queue">
+              <div class="card-title card-title--sm">Queue</div>
+              <div id="fileList"></div>
+              <div id="queueWarnings"></div>
+              <div class="flex gap-2 mt-2">
+                <button
+                  class="btn btn-primary"
+                  id="startBtn"
+                  onclick="startTranscription()"
+                >
+                  Start Transcription
+                </button>
+                <button class="btn btn-ghost" onclick="clearQueue()">
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="card card--hidden" id="jobsCard">
+            <div class="card-title">Progress</div>
+            <div id="jobList"></div>
+          </div>
+        </div>
+
+        <div id="panel-history" class="panel">
+          <div class="card">
+            <div class="card-title card-title--space">
+              Transcript History
+              <button class="btn btn-ghost btn-sm" onclick="loadTranscripts()">
+                Refresh
+              </button>
+            </div>
+            <div id="transcriptList" class="transcript-list"></div>
+          </div>
+          <div class="card hidden" id="viewerCard">
+            <div class="card-title card-title--space">
+              <span id="viewerTitle">—</span>
+              <button class="btn btn-ghost btn-sm" id="downloadBtn">
+                Download
+              </button>
+            </div>
+            <div class="text-viewer" id="transcriptViewer"></div>
+          </div>
+        </div>
+
+        <div id="panel-compress" class="panel">
+          <div class="card">
+            <div class="card-title">Audio Compression</div>
+            <p class="text-muted card-desc">
+              Compress audio to mono 16 kHz 48k MP3, suitable for Groq API (25
+              MB limit). The compressed file will be downloaded automatically to
+              your browser's default download folder.
+            </p>
+            <div class="form-group form-group--mb">
+              <label>Select Audio Files</label>
+              <div
+                class="drop-zone drop-zone--sm"
+                id="compressDropZone"
+                onclick="compressFileInput.click()"
+              >
+                <p>
+                  <strong>Click to select files</strong> or drag and drop here
+                </p>
+                <p class="drop-zone__hint">
+                  Supported: .mp3 &middot; .wav &middot; .m4a
+                  &nbsp;&middot;&nbsp; Multiple files will be packaged as .zip
+                </p>
+              </div>
+              <input
+                type="file"
+                id="compressFileInput"
+                accept=".mp3,.wav,.m4a"
+                multiple
+                style="display: none"
+              />
+              <div id="compressFileList" class="mt-2"></div>
+            </div>
+            <div class="flex gap-2">
+              <button
+                class="btn btn-primary"
+                id="compressBtn"
+                onclick="runCompress()"
+                disabled
+              >
+                Compress &amp; Download
+              </button>
+              <button class="btn btn-ghost" onclick="clearCompressQueue()">
+                Clear
+              </button>
+            </div>
+            <div id="compressStatus" class="mt-2"></div>
+          </div>
+          <div class="card hidden" id="compressResultCard">
+            <div class="card-title">Compression Results</div>
+            <div id="compressResultList"></div>
+          </div>
+        </div>
+
+        <div id="panel-evaluate" class="panel">
+          <div class="card">
+            <div class="card-title">Semantic Similarity Evaluation</div>
+            <p class="text-muted card-desc">
+              Upload a transcript file and a Ground Truth file to calculate
+              their semantic similarity score.
+            </p>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Transcript File (.txt)</label>
+                <div
+                  class="eval-drop"
+                  id="evalTranscriptDrop"
+                  onclick="evalTranscriptInput.click()"
+                >
+                  <div id="evalTranscriptName">Click to select file</div>
+                </div>
+                <input
+                  type="file"
+                  id="evalTranscriptInput"
+                  accept=".txt"
+                  style="display: none"
+                />
+              </div>
+              <div class="form-group">
+                <label>Ground Truth File (.txt)</label>
+                <div
+                  class="eval-drop"
+                  id="evalGroundTruthDrop"
+                  onclick="evalGroundTruthInput.click()"
+                >
+                  <div id="evalGroundTruthName">Click to select file</div>
+                </div>
+                <input
+                  type="file"
+                  id="evalGroundTruthInput"
+                  accept=".txt"
+                  style="display: none"
+                />
+              </div>
+            </div>
+            <div class="flex gap-2 mt-1">
+              <button
+                class="btn btn-primary"
+                id="evalBtn"
+                onclick="runEvaluate()"
+                disabled
+              >
+                Calculate Similarity
+              </button>
+              <button class="btn btn-ghost" onclick="clearEval()">Clear</button>
+            </div>
+            <div id="evalResult" class="mt-2"></div>
+          </div>
+        </div>
+
+        <div id="panel-settings" class="panel">
+          <div class="card">
+            <div class="card-title">API Keys</div>
+            <p class="text-muted card-desc">
+              Enter API keys below or configure them in your<code
+                class="inline-code"
+                >.env</code
+              >
+              file.
+            </p>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Groq API Key</label>
+                <div class="key-field">
+                  <input
+                    type="password"
+                    id="key-groq"
+                    placeholder="gsk_..."
+                    autocomplete="off"
+                  />
+                  <button
+                    class="key-toggle"
+                    onclick="toggleKeyVisibility('key-groq', this)"
+                  >
+                    show
+                  </button>
+                </div>
+                <div class="key-status" id="key-groq-status"></div>
+              </div>
+              <div class="form-group">
+                <label>Gemini API Key</label>
+                <div class="key-field">
+                  <input
+                    type="password"
+                    id="key-gemini"
+                    placeholder="AIza..."
+                    autocomplete="off"
+                  />
+                  <button
+                    class="key-toggle"
+                    onclick="toggleKeyVisibility('key-gemini', this)"
+                  >
+                    show
+                  </button>
+                </div>
+                <div class="key-status" id="key-gemini-status"></div>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button class="btn btn-primary" onclick="saveApiKeys()">
+                Save Keys
+              </button>
+              <button class="btn btn-ghost" onclick="loadApiKeys()">
+                Reload Status
+              </button>
+            </div>
+            <div id="keyStatus" class="mt-2"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Transcription Settings</div>
+            <div class="form-row form-row--mb">
+              <div class="form-group">
+                <label>Method</label>
+                <select id="cfg-method" onchange="onMethodChange()">
+                  <option value="api">API</option>
+                  <option value="local">Local (Whisper)</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="cfg-api-section">
+              <div class="settings-section-label">API Settings</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>API Provider</label>
+                  <select id="cfg-api-type" onchange="onApiTypeChange()">
+                    <option value="groq">Groq</option>
+                    <option value="gemini">Gemini</option>
+                  </select>
+                </div>
+                <div class="form-group" id="cfg-groq-model-row">
+                  <label>Groq Model</label>
+                  <select id="cfg-groq-model">
+                    <option value="whisper-large-v3-turbo">
+                      whisper-large-v3-turbo (recommended)
+                    </option>
+                    <option value="whisper-large-v3">whisper-large-v3</option>
+                  </select>
+                </div>
+                <div class="form-group hidden" id="cfg-gemini-model-row">
+                  <label>Gemini Model</label>
+                  <select id="cfg-gemini-model">
+                    <option value="gemini-2.5-flash">
+                      gemini-2.5-flash (recommended)
+                    </option>
+                    <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div id="cfg-local-section" class="hidden">
+              <div class="settings-section-label">Local Whisper Settings</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Whisper Model Size</label>
+                  <select id="cfg-whisper">
+                    <option value="tiny">tiny (fastest, lower accuracy)</option>
+                    <option value="base">base</option>
+                    <option value="small">small</option>
+                    <option value="medium">medium (recommended)</option>
+                    <option value="large">
+                      large (most accurate, slowest)
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Model Storage Path</label>
+                  <input
+                    type="text"
+                    id="cfg-whisper-path"
+                    placeholder="e.g. C:\models\whisper"
+                  />
+                  <div class="text-muted field-hint">
+                    Corresponds to
+                    <code class="inline-code">WHISPER_DOWNLOAD_PATH</code> in
+                    config.py. If left empty, Whisper downloads to
+                    <code class="inline-code">%USERPROFILE%\.cache\whisper</code
+                    >.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section-label settings-section-label--gap">
+              Language Settings
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Input Language</label>
+                <input type="text" id="cfg-audio-lang" placeholder="zh" />
+              </div>
+              <div class="form-group">
+                <label>Output Language</label>
+                <input type="text" id="cfg-output-lang" placeholder="en" />
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button class="btn btn-primary" onclick="saveConfig()">
+                Save Settings
+              </button>
+              <button class="btn btn-ghost" onclick="loadConfig()">
+                Reload
+              </button>
+            </div>
+            <div id="configStatus" class="mt-2"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Current Configuration</div>
+            <pre id="configDisplay" class="config-display"></pre>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <template id="tpl-file-item">
+      <div class="file-item">
+        <span class="fi-name"></span>
+        <button class="file-item__remove">&#x2715;</button>
+      </div>
+    </template>
+
+    <template id="tpl-job-card">
+      <div class="job-card">
+        <div class="job-card__header">
+          <span class="job-card__name"></span>
+          <span class="badge badge-queued">Queued</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill indeterminate"></div>
+        </div>
+        <div class="job-card__result"></div>
+      </div>
+    </template>
+
+    <template id="tpl-transcript-item">
+      <div class="transcript-item">
+        <span class="name"></span>
+        <div class="actions">
+          <a class="btn btn-ghost btn-sm ti-dl" download>Download</a>
+        </div>
+      </div>
+    </template>
+
+    <template id="tpl-compress-result">
+      <div class="compress-result">
+        <div class="compress-result__name"></div>
+        <div class="compress-result__stats">
+          <span class="cr-orig"></span>
+          <span class="compress-result__arrow">&#x2192;</span>
+          <span class="cr-comp"></span>
+          <span class="compress-result__badge cr-ratio"></span>
+        </div>
+        <div class="compress-result__path cr-path"></div>
+      </div>
+    </template>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const cloneTpl = (id) =>
+        document.getElementById(id).content.cloneNode(true).firstElementChild;
+
+      function setupDrop(el, onDrop) {
+        el.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          el.classList.add("dragover");
+        });
+        el.addEventListener("dragleave", () => el.classList.remove("dragover"));
+        el.addEventListener("drop", (e) => {
+          e.preventDefault();
+          el.classList.remove("dragover");
+          onDrop([...e.dataTransfer.files]);
+        });
+      }
+
+      async function apiFetch(url, opts = {}) {
+        const res = await fetch(url, opts);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || res.statusText);
+        return data;
+      }
+
+      function showToast(msg, type = "info") {
+        const t = Object.assign(document.createElement("div"), {
+          className: `toast toast--${type}`,
+          innerHTML: msg,
+        });
+        document.body.appendChild(t);
+        setTimeout(() => {
+          t.style.opacity = "0";
+          setTimeout(() => t.remove(), 300);
+        }, 4000);
+      }
+
+      function switchPanel(name, btn) {
+        document
+          .querySelectorAll(".panel")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((b) => b.classList.remove("active"));
+        $("panel-" + name).classList.add("active");
+        btn.classList.add("active");
+        (
+          ({
+            transcribe: checkPreflight,
+            history: loadTranscripts,
+            settings: loadConfig,
+            evaluate: updateEvalBtn,
+          })[name] || (() => {})
+        )();
+      }
+
+      const SIZE_LIMIT_MB = 25;
+      let selectedFiles = [],
+        currentConfig = {};
+
+      fileInput.addEventListener("change", (e) =>
+        addFiles([...e.target.files]),
+      );
+      setupDrop(dropZone, addFiles);
+
+      function addFiles(files) {
+        const bad = files.filter((f) => !/\.(mp3|wav|m4a)$/i.test(f.name));
+        if (bad.length)
+          showToast(
+            bad.map((f) => `"${f.name}" not supported`).join("<br>"),
+            "error",
+          );
+        files
+          .filter(
+            (f) =>
+              /\.(mp3|wav|m4a)$/i.test(f.name) &&
+              !selectedFiles.find((x) => x.name === f.name),
+          )
+          .forEach((f) => selectedFiles.push(f));
+        renderQueue();
+        checkPreflight();
+      }
+
+      function renderQueue() {
+        const isGroq =
+          currentConfig.transcription_method === "api" &&
+          currentConfig.api_type === "groq";
+        $("fileQueue").classList.toggle("hidden", !selectedFiles.length);
+        $("fileList").replaceChildren(
+          ...selectedFiles.map((f, i) => {
+            const mb = f.size / 1024 / 1024,
+              over = isGroq && mb > SIZE_LIMIT_MB;
+            const el = cloneTpl("tpl-file-item");
+            el.classList.toggle("file-item--over", over);
+            el.querySelector(".fi-name").innerHTML =
+              `${f.name} <span class="file-item__size${over ? "--over" : ""}">(${mb.toFixed(2)} MB)</span>` +
+              (over
+                ? `<span class="file-item__warn">Exceeds ${SIZE_LIMIT_MB} MB</span>`
+                : "");
+            el.querySelector(".file-item__remove").onclick = () => {
+              selectedFiles.splice(i, 1);
+              renderQueue();
+            };
+            return el;
+          }),
+        );
+        const over = selectedFiles.filter(
+          (f) => isGroq && f.size / 1024 / 1024 > SIZE_LIMIT_MB,
+        ).length;
+        $("queueWarnings").innerHTML = over
+          ? `<div class="alert alert-error mt-2"><strong>${over} file(s)</strong> exceed Groq's ${SIZE_LIMIT_MB} MB limit. Please compress first.</div>`
+          : "";
+        $("startBtn").disabled = over > 0;
+      }
+
+      function clearQueue() {
+        selectedFiles = [];
+        fileInput.value = "";
+        $("fileQueue").classList.add("hidden");
+        $("preflightWarnings").innerHTML = "";
+      }
+
+      async function checkPreflight() {
+        const warn = [];
+        try {
+          currentConfig = await apiFetch("/config");
+        } catch {
+          warn.push({ lvl: "error", msg: "Unable to reach server." });
+          return renderWarnings(warn);
+        }
+        const { transcription_method: m, api_type: t } = currentConfig;
+        if (m === "api") {
+          try {
+            const k = await apiFetch("/apikeys");
+            if (t === "groq" && !k.groq_set)
+              warn.push({
+                lvl: "error",
+                msg: "Groq API Key is not set. Go to Settings.",
+              });
+            if (t === "gemini" && !k.gemini_set)
+              warn.push({
+                lvl: "error",
+                msg: "Gemini API Key is not set. Go to Settings.",
+              });
+          } catch {
+            warn.push({ lvl: "warn", msg: "Unable to verify API Key status." });
+          }
+        }
+        if (
+          m === "local" &&
+          (!currentConfig.whisper_download_path ||
+            currentConfig.whisper_download_path === "path")
+        )
+          warn.push({
+            lvl: "warn",
+            msg: "Whisper model path not set — will use default cache location.",
+          });
+        renderWarnings(warn);
+        return !warn.find((w) => w.lvl === "error");
+      }
+
+      function renderWarnings(list) {
+        $("preflightWarnings").innerHTML = list
+          .map(
+            (w) =>
+              `<div class="alert alert-${w.lvl === "error" ? "error" : "info"} mt-2">${w.lvl === "error" ? "[Error]" : "[Warning]"} ${w.msg}</div>`,
+          )
+          .join("");
+      }
+
+      async function startTranscription() {
+        if (!selectedFiles.length) return;
+        if (!(await checkPreflight())) {
+          showToast("Resolve configuration issues first.", "error");
+          return;
+        }
+        $("jobsCard").classList.remove("card--hidden");
+        for (const file of selectedFiles) {
+          const fd = new FormData();
+          fd.append("file", file);
+          try {
+            const data = await apiFetch("/transcribe", {
+              method: "POST",
+              body: fd,
+            });
+            addJobCard(data.job_id, file.name);
+            pollJob(data.job_id);
+          } catch (e) {
+            showJobError(file.name, e.message);
+          }
+        }
+        clearQueue();
+      }
+
+      function addJobCard(jobId, filename) {
+        const el = cloneTpl("tpl-job-card");
+        el.id = `job-${jobId}`;
+        el.querySelector(".job-card__name").textContent = filename;
+        el.querySelector(".badge").id = `badge-${jobId}`;
+        el.querySelector(".progress-fill").id = `prog-${jobId}`;
+        el.querySelector(".job-card__result").id = `result-${jobId}`;
+        $("jobList").prepend(el);
+      }
+
+      function showJobError(filename, msg) {
+        $("jobsCard").classList.remove("card--hidden");
+        const d = Object.assign(document.createElement("div"), {
+          className: "alert alert-error mt-2",
+          innerHTML: `<strong>${filename}</strong>: ${msg}`,
+        });
+        $("jobList").prepend(d);
+      }
+
+      async function pollJob(jobId) {
+        const HINTS = [
+          [
+            /api.key|401|403|auth/i,
+            "API Key may be invalid. Re-enter in Settings.",
+          ],
+          [
+            /413|too large/i,
+            `File exceeds ${SIZE_LIMIT_MB} MB. Compress first.`,
+          ],
+          [/timeout/i, "Request timed out. Check your connection."],
+          [/rate.?limit|429/i, "Rate limit hit. Wait a moment and retry."],
+          [/no such file/i, "Audio file not found on server."],
+        ];
+        const iv = setInterval(async () => {
+          try {
+            const d = await apiFetch(`/job/${jobId}`);
+            const badge = $(`badge-${jobId}`),
+              prog = $(`prog-${jobId}`),
+              result = $(`result-${jobId}`);
+            if (d.status === "processing") {
+              badge.className = "badge badge-processing";
+              badge.textContent = "Processing";
+            } else if (d.status === "done") {
+              clearInterval(iv);
+              badge.className = "badge badge-done";
+              badge.textContent = "Done";
+              prog.classList.replace("indeterminate", "progress-fill--done");
+              const t = (d.result || "").trim();
+              result.innerHTML = t
+                ? `<div class="result-preview">${t.slice(0, 200)}${t.length > 200 ? "..." : ""}</div>`
+                : `<div class="alert alert-info mt-2">Transcript empty — check language settings or audio quality.</div>`;
+            } else if (d.status === "error") {
+              clearInterval(iv);
+              badge.className = "badge badge-error";
+              badge.textContent = "Error";
+              prog.classList.replace("indeterminate", "progress-fill--error");
+              const hint =
+                HINTS.find(([re]) => re.test(d.error || ""))?.[1] ?? "";
+              result.innerHTML = `<div class="error-msg">${d.error}</div>${hint ? `<div class="error-hint">${hint}</div>` : ""}`;
+            }
+          } catch {
+            clearInterval(iv);
+            const b = $(`badge-${jobId}`);
+            if (b) {
+              b.className = "badge badge-error";
+              b.textContent = "Disconnected";
+            }
+          }
+        }, 1500);
+      }
+
+      async function loadTranscripts() {
+        const { files = [] } = await apiFetch("/transcripts");
+        const list = $("transcriptList");
+        if (!files.length) {
+          list.innerHTML =
+            '<div class="text-muted pad">No transcripts found.</div>';
+          return;
+        }
+        list.replaceChildren(
+          ...files.map((f) => {
+            const el = cloneTpl("tpl-transcript-item");
+            el.querySelector(".name").textContent = f;
+            el.querySelector(".ti-dl").href = `/transcripts/${f}/download`;
+            el.querySelector(".ti-dl").onclick = (e) => e.stopPropagation();
+            el.onclick = () => viewTranscript(f);
+            return el;
+          }),
+        );
+      }
+
+      async function viewTranscript(filename) {
+        const data = await apiFetch(
+          `/transcripts/${encodeURIComponent(filename)}`,
+        );
+        $("viewerCard").classList.remove("hidden");
+        $("viewerTitle").textContent = filename;
+        $("transcriptViewer").textContent = data.content;
+        $("downloadBtn").onclick = () =>
+          window.open(`/transcripts/${filename}/download`);
+        $("viewerCard").scrollIntoView({ behavior: "smooth" });
+      }
+
+      let compressFiles = [];
+      compressFileInput.addEventListener("change", (e) =>
+        addCompressFiles([...e.target.files]),
+      );
+      setupDrop(compressDropZone, addCompressFiles);
+
+      function addCompressFiles(files) {
+        files.forEach((f) => {
+          if (!/\.(mp3|wav|m4a)$/i.test(f.name)) {
+            showToast(`"${f.name}" not supported`, "error");
+            return;
+          }
+          if (!compressFiles.find((x) => x.name === f.name))
+            compressFiles.push(f);
+        });
+        renderCompressQueue();
+      }
+
+      function renderCompressQueue() {
+        $("compressBtn").disabled = !compressFiles.length;
+        $("compressFileList").replaceChildren(
+          ...compressFiles.map((f, i) => {
+            const el = cloneTpl("tpl-file-item");
+            el.querySelector(".fi-name").innerHTML =
+              `${f.name} <span class="file-item__size">(${(f.size / 1024 / 1024).toFixed(2)} MB)</span>`;
+            el.querySelector(".file-item__remove").onclick = () => {
+              compressFiles.splice(i, 1);
+              renderCompressQueue();
+            };
+            return el;
+          }),
+        );
+      }
+
+      function clearCompressQueue() {
+        compressFiles = [];
+        compressFileInput.value = "";
+        $("compressStatus").innerHTML = "";
+        $("compressResultCard").classList.add("hidden");
+        $("compressResultList").innerHTML = "";
+        renderCompressQueue();
+      }
+
+      async function runCompress() {
+        if (!compressFiles.length) return;
+        const btn = $("compressBtn"),
+          s = $("compressStatus"),
+          rc = $("compressResultCard"),
+          rl = $("compressResultList");
+        s.innerHTML = `<div class="alert alert-info">Compressing ${compressFiles.length} file(s)…</div>`;
+        btn.disabled = true;
+        rc.classList.add("hidden");
+        const fd = new FormData();
+        compressFiles.forEach((f) => fd.append("files", f));
+        try {
+          const res = await fetch("/compress/batch", {
+            method: "POST",
+            body: fd,
+          });
+          if (!res.ok) {
+            const e = await res.json().catch(() => ({}));
+            throw new Error(e.detail || "Compression failed");
+          }
+
+          const dlName =
+            (res.headers.get("Content-Disposition") || "").match(
+              /filename="?([^";\n]+)"?/,
+            )?.[1] ??
+            (compressFiles.length > 1
+              ? "compressed_audio.zip"
+              : "compressed.mp3");
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(await res.blob());
+          a.download = dlName;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            URL.revokeObjectURL(a.href);
+            a.remove();
+          }, 1000);
+
+          s.innerHTML = "";
+          rc.classList.remove("hidden");
+          if (compressFiles.length > 1) {
+            rl.innerHTML = `<div class="alert alert-success"><strong>${compressFiles.length} files</strong> packaged as <strong>${dlName}</strong> and downloaded.</div>`;
+          } else {
+            const el = cloneTpl("tpl-compress-result");
+            const origMb = parseFloat(res.headers.get("X-Original-MB")) || 0;
+            const cmpMb = parseFloat(res.headers.get("X-Compressed-MB")) || 0;
+            el.querySelector(".compress-result__name").textContent =
+              res.headers.get("X-Original-Name") || compressFiles[0].name;
+            el.querySelector(".cr-orig").innerHTML =
+              `Original: <strong>${origMb} MB</strong>`;
+            el.querySelector(".cr-comp").innerHTML =
+              `Compressed: <strong class="compress-result__size">${cmpMb} MB</strong>`;
+            el.querySelector(".cr-ratio").textContent =
+              `↓ ${origMb ? ((1 - cmpMb / origMb) * 100).toFixed(1) : "—"}%`;
+            el.querySelector(".cr-path").innerHTML =
+              `Saved as: <strong>${dlName}</strong>`;
+            rl.replaceChildren(el);
+          }
+        } catch (e) {
+          s.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+        }
+        btn.disabled = false;
+      }
+
+      let evalTranscriptFile = null,
+        evalGroundTruthFile = null;
+
+      function setupEvalPicker(inputEl, dropEl, nameEl, setter) {
+        const pick = (f) => {
+          setter(f);
+          nameEl.textContent = f.name;
+          dropEl.classList.add("selected");
+          updateEvalBtn();
+        };
+        inputEl.addEventListener("change", (e) => {
+          if (e.target.files[0]) pick(e.target.files[0]);
+        });
+        setupDrop(dropEl, (files) => {
+          if (!files[0]?.name.endsWith(".txt")) {
+            showToast("Only .txt files are supported", "error");
+            return;
+          }
+          pick(files[0]);
+        });
+      }
+
+      setupEvalPicker(
+        evalTranscriptInput,
+        evalTranscriptDrop,
+        evalTranscriptName,
+        (f) => (evalTranscriptFile = f),
+      );
+      setupEvalPicker(
+        evalGroundTruthInput,
+        evalGroundTruthDrop,
+        evalGroundTruthName,
+        (f) => (evalGroundTruthFile = f),
+      );
+
+      function updateEvalBtn() {
+        evalBtn.disabled = !(evalTranscriptFile && evalGroundTruthFile);
+      }
+
+      function clearEval() {
+        evalTranscriptFile = evalGroundTruthFile = null;
+        [evalTranscriptInput, evalGroundTruthInput].forEach(
+          (el) => (el.value = ""),
+        );
+        evalTranscriptName.textContent = evalGroundTruthName.textContent =
+          "Click to select file";
+        evalTranscriptDrop.classList.remove("selected");
+        evalGroundTruthDrop.classList.remove("selected");
+        $("evalResult").innerHTML = "";
+        updateEvalBtn();
+      }
+
+      async function runEvaluate() {
+        const s = $("evalResult");
+        s.innerHTML = '<div class="alert alert-info">Calculating…</div>';
+        const fd = new FormData();
+        fd.append("transcript", evalTranscriptFile);
+        fd.append("ground_truth", evalGroundTruthFile);
+        try {
+          const data = await apiFetch("/evaluate", {
+            method: "POST",
+            body: fd,
+          });
+          const pct = data.similarity_percent;
+          const color =
+            pct >= 80
+              ? "var(--accent2)"
+              : pct >= 50
+                ? "var(--warn)"
+                : "var(--danger)";
+          const circ = 2 * Math.PI * 40;
+          s.innerHTML = `
+      <div class="eval-result">
+        <div class="score-ring">
+          <svg width="100" height="100" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="var(--surface2)" stroke-width="10"/>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="${color}" stroke-width="10"
+              stroke-dasharray="${(pct / 100) * circ} ${circ}" stroke-linecap="round"/>
+          </svg>
+          <div class="val" style="color:${color}">${pct.toFixed(1)}<small>%</small></div>
+        </div>
+        <div class="eval-result__label">Semantic similarity</div>
+        <div class="eval-result__files">
+          Transcript: <strong>${evalTranscriptFile.name}</strong> &nbsp;&middot;&nbsp;
+          Ground Truth: <strong>${evalGroundTruthFile.name}</strong>
+        </div>
+      </div>`;
+        } catch (e) {
+          s.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+        }
+      }
+
+      async function loadConfig() {
+        const cfg = await apiFetch("/config");
+        currentConfig = cfg;
+        $("cfg-method").value = cfg.transcription_method;
+        $("cfg-api-type").value = cfg.api_type;
+        $("cfg-audio-lang").value = cfg.audio_language;
+        $("cfg-output-lang").value = cfg.output_language;
+        $("cfg-whisper").value = cfg.whisper_model;
+        $("cfg-whisper-path").value = cfg.whisper_download_path || "";
+        $("cfg-groq-model").value = cfg.llm_model_groq;
+        $("cfg-gemini-model").value = cfg.llm_model_gemini;
+        onMethodChange();
+        const m = cfg.transcription_method;
+        $("configDisplay").textContent = [
+          `Method         : ${m}`,
+          m === "api" ? `API Type       : ${cfg.api_type}` : null,
+          m === "api"
+            ? cfg.api_type === "groq"
+              ? `Groq Model     : ${cfg.llm_model_groq}`
+              : `Gemini Model   : ${cfg.llm_model_gemini}`
+            : [
+                `Whisper Model  : ${cfg.whisper_model}`,
+                `Whisper Path   : ${cfg.whisper_download_path || "default"}`,
+              ].join("\n"),
+          `Audio Language : ${cfg.audio_language}`,
+          `Output Language: ${cfg.output_language}`,
+        ]
+          .filter(Boolean)
+          .join("\n");
+      }
+
+      function onMethodChange() {
+        const m = $("cfg-method").value;
+        $("cfg-api-section").classList.toggle("hidden", m !== "api");
+        $("cfg-local-section").classList.toggle("hidden", m !== "local");
+        if (m === "api") onApiTypeChange();
+      }
+
+      function onApiTypeChange() {
+        const t = $("cfg-api-type").value;
+        $("cfg-groq-model-row").classList.toggle("hidden", t !== "groq");
+        $("cfg-gemini-model-row").classList.toggle("hidden", t !== "gemini");
+      }
+
+      async function saveConfig() {
+        try {
+          await apiFetch("/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              transcription_method: $("cfg-method").value,
+              api_type: $("cfg-api-type").value,
+              audio_language: $("cfg-audio-lang").value,
+              output_language: $("cfg-output-lang").value,
+              whisper_model: $("cfg-whisper").value,
+              whisper_download_path: $("cfg-whisper-path").value.trim() || null,
+              groq_model: $("cfg-groq-model").value,
+              gemini_model: $("cfg-gemini-model").value,
+            }),
+          });
+          $("configStatus").innerHTML =
+            '<div class="alert alert-success">Settings saved (session only — edit config.py for permanent changes).</div>';
+          loadConfig();
+        } catch (e) {
+          $("configStatus").innerHTML =
+            `<div class="alert alert-error">${e.message}</div>`;
+        }
+      }
+
+      async function loadApiKeys() {
+        const d = await apiFetch("/apikeys");
+        [
+          ["key-groq-status", "key-groq", d.groq_set, d.groq_masked],
+          ["key-gemini-status", "key-gemini", d.gemini_set, d.gemini_masked],
+        ].forEach(([sid, iid, set, masked]) => {
+          const el = $(sid);
+          el.className = `key-status ${set ? "set" : "unset"}`;
+          el.textContent = set ? `Set (${masked})` : "Not set";
+          if (set) $(iid).placeholder = masked;
+        });
+      }
+
+      async function saveApiKeys() {
+        const body = {};
+        const groq = $("key-groq").value.trim(),
+          gemini = $("key-gemini").value.trim();
+        if (groq) body.groq = groq;
+        if (gemini) body.gemini = gemini;
+        if (!Object.keys(body).length) {
+          $("keyStatus").innerHTML =
+            '<div class="alert alert-info">No keys entered.</div>';
+          return;
+        }
+        try {
+          await apiFetch("/apikeys", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          $("keyStatus").innerHTML =
+            '<div class="alert alert-success">Keys updated (session only).</div>';
+          $("key-groq").value = $("key-gemini").value = "";
+          loadApiKeys();
+        } catch (e) {
+          $("keyStatus").innerHTML =
+            `<div class="alert alert-error">${e.message}</div>`;
+        }
+      }
+
+      function toggleKeyVisibility(id, btn) {
+        const el = $(id);
+        el.type = el.type === "password" ? "text" : "password";
+        btn.textContent = el.type === "text" ? "hide" : "show";
+      }
+
+      loadConfig();
+      loadApiKeys();
+    </script>
+  </body>
+</html>
