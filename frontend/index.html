@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Audio Transcription</title>
     <link rel="stylesheet" href="/static/index_style.css" />
+    <link rel="icon" href="data:,">
   </head>
   <body>
     <div class="app">
@@ -21,8 +22,8 @@
         >
           Transcribe
         </button>
-        <button class="nav-item" onclick="switchPanel('history', this)">
-          History
+        <button class="nav-item" id="nav-history" onclick="switchPanel('history', this)">
+          History <span id="history-badge" class="history-badge hidden"></span>
         </button>
         <div class="section-header section-header--gap">Tools</div>
         <button class="nav-item" onclick="switchPanel('compress', this)">
@@ -457,7 +458,7 @@
         (
           ({
             transcribe: checkPreflight,
-            history: loadTranscripts,
+            history: () => { loadTranscripts(); $("history-badge").classList.add("hidden"); },
             settings: loadConfig,
             evaluate: updateEvalBtn,
           })[name] || (() => {})
@@ -653,6 +654,9 @@
               result.innerHTML = t
                 ? `<div class="result-preview">${t.slice(0, 200)}${t.length > 200 ? "..." : ""}</div>`
                 : `<div class="alert alert-info mt-2">Transcript empty — check language settings or audio quality.</div>`;
+              $("history-badge").textContent = "New";
+              $("history-badge").classList.remove("hidden");
+
             } else if (d.status === "error") {
               clearInterval(iv);
               badge.className = "badge badge-error";
@@ -687,6 +691,20 @@
             el.querySelector(".name").textContent = f;
             el.querySelector(".ti-dl").href = `/transcripts/${f}/download`;
             el.querySelector(".ti-dl").onclick = (e) => e.stopPropagation();
+            el.querySelector(".ti-del")?.addEventListener("click", async (e) => {
+              e.stopPropagation();
+              if (!confirm(`Delete "${f}"?`)) return;
+              try {
+                await apiFetch(`/transcripts/${encodeURIComponent(f)}`, { method: "DELETE" });
+                showToast(`"${f}" deleted.`, "info");
+                loadTranscripts();
+                if ($("viewerTitle").textContent === f) {
+                  $("viewerCard").classList.add("hidden");
+                }
+              } catch (err) {
+                showToast(`Delete failed: ${err.message}`, "error");
+              }
+            });
             el.onclick = () => viewTranscript(f);
             return el;
           }),

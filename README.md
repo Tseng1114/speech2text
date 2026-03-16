@@ -35,15 +35,33 @@ LLM_API_KEY_groq= os.getenv("LLM_API_KEY_groq")
 LLM_MODEL_groq= "whisper-large-v3-turbo"                                    #Change model if needed
 ```
 6. Run
-```
-python  main.py 
-```
-# Notice
-1. Evaluate the model by calculating semantic similarity
-- Uncomment the **test_model()** function at the bottom of `main.py` to trigger the calculation automatically after transcription.
 
-2. Compress audio for API limits
-- If your audio files exceed 25MB (the standard limit for the Groq API), you should use the built-in compression utility to reduce file size before processing. Uncomment the **audio_compression.compress_audio()** in `main.py`
+**Option A — Command line**
+```
+python main.py
+```
+
+**Option B — Web UI**
+
+Start the server and open `http://127.0.0.1:8000` in your browser.
+```
+uvicorn app:app --reload
+```
+Settings (method, model, language) can be changed on the Settings page without restarting the server.
+
+> **Note:** If you did not set API keys in `.env`, you can enter them on the Settings page in the web UI. Keys entered via the UI are session-only and will be lost on server restart.
+# Notice
+## Semantic similarity testing
+The code includes a tool to compare your transcription results with a "Ground Truth" text file to calculate accuracy.
+
+1. Place your reference text in test_model/ground_truth.txt.
+  
+2. To enable testing during the main run, uncomment the "test model section" at the bottom of 'main.py'.
+
+3. Alternatively, run the comparison script directly:
+```
+python semantic_similarity.py
+```
 
 # Architecture diagram
 ```mermaid

@@ -2,12 +2,25 @@ import os
 import re
 from sentence_transformers import SentenceTransformer, util
 
+_MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
+_model: SentenceTransformer | None = None
+
+
+def _get_model() -> SentenceTransformer:
+    global _model
+    if _model is None:
+        _model = SentenceTransformer(_MODEL_NAME)
+    return _model
+
+
 def clean_text(text: str) -> str:
     text = re.sub(r"[^\w\u4e00-\u9fff]", "", text)
     text = "".join(text.split())
     return text
 
-def compare(transcript_path, ground_truth_path):
+
+def compare(transcript_path: str, ground_truth_path: str) -> float | None:
+    """Return similarity percentage (0–100), or None if GT file is missing."""
     if not os.path.exists(ground_truth_path):
         return None
 
@@ -18,17 +31,14 @@ def compare(transcript_path, ground_truth_path):
             ground_truth_text = f.read().strip()
     except Exception as e:
         print(f"Read file error: {e}")
-        return 0
+        return 0.0
 
     t_clean = clean_text(transcript_text)
     g_clean = clean_text(ground_truth_text)
 
-    model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-
+    model = _get_model()
     t_vec = model.encode(t_clean, convert_to_tensor=True)
     g_vec = model.encode(g_clean, convert_to_tensor=True)
 
     similarity = util.pytorch_cos_sim(t_vec, g_vec).item()
-    similarity_percent = similarity * 100
-
-    return similarity_percent
+    return similarity * 100
